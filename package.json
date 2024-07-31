@@ -7,10 +7,12 @@
     "start": "node index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Jeffrey Willard",
   "license": "ISC",
-  "description": "",
+  "description": "Server-side component of a movies web application created as an exercise for CareerFoundry",
   "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.19.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

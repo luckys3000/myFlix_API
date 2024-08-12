@@ -1,10 +1,209 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Movie API Documentation</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Sulphur+Point:wght@300;400;700&display=swap" rel="stylesheet" />
+		<link rel="stylesheet" type="text/css" href="css/styles.css" />
 	</head>
 	<body>
 		<h1>Movie API Documentation</h1>
-		<p>This API provides access to a database of movies, allowing users to search for and retrieve information about various films.</p>
+		<p>The myFlix application provides access to a database of movies, allowing movie enthusiasts the ability to search for and retrieve extensive information on films, directors, and genres.</p>
+		<p>Users have the option to register, create a profile, and manage their favorite movies list.</p>
+		<table>
+			<thead>
+				<tr>
+					<th>Business Logic</th>
+					<th>URL</th>
+					<th>HTTP Method</th>
+					<th>Request body data format</th>
+					<th>Response body data format</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Return a list of ALL movies to the user</td>
+					<td>/movies</td>
+					<td>GET</td>
+					<td>None</td>
+					<td>A JSON object holding data about movies</td>
+				</tr>
+				<tr>
+					<td>Return data (description, genre, director, image URL) about a single movie by title to the user</td>
+					<td>/movies/:title</td>
+					<td>GET</td>
+					<td>None</td>
+					<td>
+						A JSON object holding data about a specific movie, containing a Title, Plot Summary, Genre, Director, Image (movie poster), and whether it's featured or not. Example:
+						<pre><code>
+                {
+                  Title: "The Silence of the Lambs",
+                  Plot: "A young F.B.I. cadet must receive the help of an incarcerated and manipulative
+                        cannibal killer to help catch another serial killer, a madman who skins his victims.",
+                  Genre: {
+                    Name: "Thriller",
+                    Description:
+                      "Thriller is a genre of fiction with numerous, often overlapping, subgenres, including crime,
+                      horror, and detective fiction. Thrillers are characterized and defined by the moods they elicit,
+                      giving their audiences heightened feelings of suspense, excitement, surprise, anticipation
+                      and anxiety.",
+                  },
+                  Director: {
+                    Name: "Jonathan Demme",
+                    Bio: "Robert Jonathan Demme was an American filmmaker, whose career directing, producing,
+                    and screenwriting spanned more than 30 years and 70 feature films, documentaries,
+                    and television productions.",
+                    Birth: "February 22, 1944",
+                    Death: "April 26, 2017",
+                  },
+                  ImageURL: "https://m.media-amazon.com/images/M/MV5BNjNhZTk0ZmEtNjJhMi00YzFlLWE1MmEtYzM1M2ZmMGMwMTU4XkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
+                  Featured: false,
+                },
+              </code></pre>
+					</td>
+				</tr>
+				<tr>
+					<td>Return data about a genre (description) by name/title (e.g., "Thriller")</td>
+					<td>/movies/genre/:name</td>
+					<td>GET</td>
+					<td>None</td>
+					<td>
+						A JSON object holding data about a specific genre containing a description of the movie genre. Example:
+						<pre><code>
+                Genre: {
+                  Name: "Drama",
+                  Description:
+                    "The drama genre features stories with high stakes and many conflicts.
+                    They're plot-driven and demand that every character and scene move
+                    the story forward. Dramas follow a clearly defined narrative plot structure,
+                    portraying real-life scenarios or extreme situations with emotionally-driven characters.",
+                  },
+              </code></pre>
+					</td>
+				</tr>
+				<tr>
+					<td>Return data about a director (bio, birth year, death year) by name</td>
+					<td>/movies/directors/:name</td>
+					<td>GET</td>
+					<td>None</td>
+					<td>
+						A JSON object holding data about a specific movie's director, containing the director's name, short bio, birth year, and death year. Example:
+						<pre><code>
+                {
+                  Name: "George P. Cosmatos",
+                  Bio: 'George Pan Cosmatos was a Greek-Italian film director and screenwriter.
+                  Following early success in his home country with drama films such as
+                  "Massacre in Rome" with Richard Burton (based on the real-life Ardeatine massacre),
+                  Cosmatos retooled his career towards mainstream "blockbuster" action and adventure films,
+                  including "The Cassandra Crossing" and "Escape to Athena", both of which were British-Italian
+                  co-productions.',
+                  Birth: "January 4, 1941",
+                  Death: "April 19, 2005",
+                }
+              </code></pre>
+					</td>
+				</tr>
+				<tr>
+					<td>Allow new users to register</td>
+					<td>/users</td>
+					<td>POST</td>
+					<td>
+						A JSON object holding data about the user that is to be registered. Example:
+						<pre><code>
+                {
+                  "name": "Charlie",
+                  "favoriteMovies":[],
+                }
+              </code></pre>
+					</td>
+					<td>
+						A JSON object holding data about the user that is added including a Universally Unique Identifier (UUID). Example:
+						<pre><code>
+                {
+                  "name": "Charlie",
+                  "favoriteMovies": [],
+                  "id": "ff61f25d-0e23-428a-a0e4-57895fbcd705"
+                }
+              </code></pre>
+					</td>
+				</tr>
+				<tr>
+					<td>Allow users to update their user info (username)</td>
+					<td>/users/:id</td>
+					<td>PUT</td>
+					<td>
+						A JSON object holding updated data about an existing user. Example:
+						<pre><code>
+              {
+                id: 1,
+                name: "Jeffrey (update)",
+                favoriteMovies: [],
+              },
+            </code></pre>
+					</td>
+					<td>
+						A JSON object holding data about the user's updated data. Example:
+						<pre><code>
+              {
+                id: 1,
+                name: "Jeffrey (update)",
+                favoriteMovies: [],
+              },
+            </code></pre>
+					</td>
+				</tr>
+				<tr>
+					<td>Allow users to add a movie to their list of favorites (showing only a text that a movie has been added—more on this later);</td>
+					<td>/users/:id/:movieTitle</td>
+					<td>POST</td>
+					<td>
+						A JSON object holding updated data about an existing user. Example:
+						<pre><code>
+            {
+              "id": 1
+              "name": "Jeffrey",
+              "favoriteMovies": "Tombstone (update)"
+            },
+          </code></pre>
+					</td>
+					<td>A plain text string notifying the user that the movie has been added to their favorites. Example: <br />"Tombstone has been added to user 1's favorites."</td>
+				</tr>
+				<tr>
+					<td>Allow users to remove a movie from their list of favorites (showing only a text that a movie has been removed—more on this later).</td>
+					<td>/users/:id/:movieTitle</td>
+					<td>DELETE</td>
+					<td>
+						A JSON object holding updated data about an existing user. Example:
+						<pre><code>
+              {
+                "id": 1
+                "name": "Jeffrey",
+                "favoriteMovies": "Tombstone (update)"
+              },
+            </code></pre>
+					</td>
+					<td>A plain text string notifying the user that the movie has been removed from their favorites. Example: <br />"Tombstone has been removed from user 1's favorites."</td>
+				</tr>
+				<tr>
+					<td>Allow existing users to deregister (showing only a text that a user has been removed—more on this later).</td>
+					<td>/users/:id/</td>
+					<td>DELETE</td>
+					<td>
+						A JSON object holding updated data about an the existing user that will be deleted. Example:
+						<pre><code>
+              {
+                "id": 1
+                "name": "Jeffrey",
+                "favoriteMovies": []
+              },
+            </code></pre>
+					</td>
+					<td>A plain text string notifying the user that the user has been. Example: <br />"User 1 has been deleted."</td>
+				</tr>
+			</tbody>
+		</table>
 	</body>
 </html>

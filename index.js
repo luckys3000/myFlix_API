@@ -75,8 +75,8 @@ app.post("/users", (req, res) => {
 	}
 });
 
-//Create
-app.post("/users/:id/:movieTitle", (req, res) => {
+//Add a favorite movie
+app.post("/users/:id/movies/:movieTitle", (req, res) => {
 	const { id, movieTitle } = req.params;
 
 	let user = users.find((user) => user.id == id);
@@ -89,17 +89,17 @@ app.post("/users/:id/:movieTitle", (req, res) => {
 	}
 });
 
-//GET requests
+//Return welcome message on index page
 app.get("/", (req, res) => {
 	res.send("Welcome to myFlix API!");
 });
 
-//Read
+//Return list of ALL movies to the user
 app.get("/movies", (req, res) => {
 	res.status(200).json(movies);
 });
 
-//Read
+//Return data about a single movie by title to the user
 app.get("/movies/:title", (req, res) => {
 	const { title } = req.params;
 	const movie = movies.find((movie) => movie.Title === title);
@@ -111,8 +111,8 @@ app.get("/movies/:title", (req, res) => {
 	}
 });
 
-//Read
-app.get("/movies/genre/:genreName", (req, res) => {
+//Return data about a genre by name/title
+app.get("/genre/:genreName", (req, res) => {
 	const { genreName } = req.params;
 	const genre = movies.find((movie) => movie.Genre.Name === genreName).Genre;
 
@@ -123,8 +123,8 @@ app.get("/movies/genre/:genreName", (req, res) => {
 	}
 });
 
-//Read
-app.get("/movies/directors/:directorName", (req, res) => {
+//Return data about a director by name
+app.get("/directors/:directorName", (req, res) => {
 	const { directorName } = req.params;
 	const director = movies.find((movie) => movie.Director.Name === directorName).Director;
 
@@ -135,7 +135,7 @@ app.get("/movies/directors/:directorName", (req, res) => {
 	}
 });
 
-//Update
+//Allow users to update their users info
 app.put("/users/:id", (req, res) => {
 	const { id } = req.params;
 	const updateUser = req.body;
@@ -150,8 +150,8 @@ app.put("/users/:id", (req, res) => {
 	}
 });
 
-//Delete
-app.delete("/users/:id/:movieTitle", (req, res) => {
+//Remove a movie from a user's favorites list
+app.delete("/users/:id/movies/:movieTitle", (req, res) => {
 	const { id, movieTitle } = req.params;
 
 	let user = users.find((user) => user.id == id);
@@ -164,7 +164,7 @@ app.delete("/users/:id/:movieTitle", (req, res) => {
 	}
 });
 
-//Delete user
+//All existing users to deregister
 app.delete("/users/:id", (req, res) => {
 	const { id } = req.params;
 

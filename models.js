@@ -9,6 +9,8 @@ let movieSchema = mongoose.Schema({
 	Director: {
 		Name: String,
 		Bio: String,
+		Birth: Date,
+		Death: Date,
 	},
 	Actors: [String],
 	ImagePath: String,
@@ -16,7 +18,7 @@ let movieSchema = mongoose.Schema({
 });
 
 let userSchema = mongoose.Schema({
-	Username: { type: String, required: true },
+	Name: { type: String, required: true },
 	Password: { type: String, required: true },
 	Email: { type: String, required: true },
 	Birthday: Date,

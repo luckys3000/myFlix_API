@@ -1,8 +1,17 @@
 const express = require("express"),
 	morgan = require("morgan"),
 	bodyParser = require("body-parser"),
-	uuid = require("uuid"),
-	app = express("express");
+	uuid = require("uuid");
+
+const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const mongoose = require("mongoose");
+const Models = require("./models.js");
+
+const Movies = Models.Movie;
+const Users = Models.User;
 
 app.use(bodyParser.json());
 
@@ -12,167 +21,315 @@ app.use(morgan("common"));
 //Express.static to serve documentation file from public folder
 app.use(express.static("public"));
 
-let users = [
-	{
-		id: 1,
-		name: "Jeffrey",
-		favoriteMovies: [],
-	},
-	{
-		id: 2,
-		name: "James",
-		favoriteMovies: [],
-	},
-];
+mongoose.connect("mongodb://localhost:27017/cfDB");
 
-let movies = [
-	{
-		Title: "The Silence of the Lambs",
-		Plot: "A young F.B.I. cadet must receive the help of an incarcerated and manipulative cannibal killer to help catch another serial killer, a madman who skins his victims.",
-		Genre: {
-			Name: "Thriller",
-			Description:
-				"Thriller is a genre of fiction with numerous, often overlapping, subgenres, including crime, horror, and detective fiction. Thrillers are characterized and defined by the moods they elicit, giving their audiences heightened feelings of suspense, excitement, surprise, anticipation and anxiety.",
-		},
-		Director: {
-			Name: "Jonathan Demme",
-			Bio: "Robert Jonathan Demme was an American filmmaker, whose career directing, producing, and screenwriting spanned more than 30 years and 70 feature films, documentaries, and television productions.",
-			Birth: "February 22, 1944",
-			Death: "April 26, 2017",
-		},
-		ImageURL: "https://m.media-amazon.com/images/M/MV5BNjNhZTk0ZmEtNjJhMi00YzFlLWE1MmEtYzM1M2ZmMGMwMTU4XkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
-		Featured: false,
-	},
-	{
-		Title: "Tombstone",
-		Plot: "A successful lawman's plans to retire anonymously in Tombstone, Arizona, are disrupted by the kind of outlaws he was famous for eliminating.",
-		Genre: {
-			Name: "Drama",
-			Description:
-				"The drama genre features stories with high stakes and many conflicts. They're plot-driven and demand that every character and scene move the story forward. Dramas follow a clearly defined narrative plot structure, portraying real-life scenarios or extreme situations with emotionally-driven characters.",
-		},
-		Director: {
-			Name: "George P. Cosmatos",
-			Bio: 'George Pan Cosmatos was a Greek-Italian film director and screenwriter. Following early success in his home country with drama films such as Massacre in Rome with Richard Burton (based on the real-life Ardeatine massacre), Cosmatos retooled his career towards mainstream "blockbuster" action and adventure films, including The Cassandra Crossing and Escape to Athena, both of which were British-Italian co-productions.',
-			Birth: "January 4, 1941",
-			Death: "April 19, 2005",
-		},
-		ImageURL: "https://m.media-amazon.com/images/M/MV5BODRkYzA4MGItODE2MC00ZjkwLWI2NDEtYzU1NzFiZGU1YzA0XkEyXkFqcGdeQXVyNTAyODkwOQ@@._V1_SX300.jpg",
-		Featured: false,
-	},
-];
-
-//Create
-app.post("/users", (req, res) => {
-	const newUser = req.body;
-
-	if (newUser.name) {
-		newUser.id = uuid.v4();
-		users.push(newUser);
-		res.status(201).json(newUser);
-	} else {
-		res.status(400).send("users need names");
-	}
-});
-
-//Add a favorite movie
-app.post("/users/:id/movies/:movieTitle", (req, res) => {
-	const { id, movieTitle } = req.params;
-
-	let user = users.find((user) => user.id == id);
-
-	if (user) {
-		user.favoriteMovies.push(movieTitle);
-		res.status(201).send(`${movieTitle} has been added to user ${id}'s favorites.`);
-	} else {
-		res.status(400).send("no such user");
-	}
-});
-
-//Return welcome message on index page
+/**
+ * Return welcome message on index page.
+ *
+ * @route GET /
+ * @returns {string} Welcome message returned to user
+ */
 app.get("/", (req, res) => {
 	res.send("Welcome to myFlix API!");
 });
 
-//Return list of ALL movies to the user
-app.get("/movies", (req, res) => {
-	res.status(200).json(movies);
+/**
+ * Return a list of all movies to the user.
+ *
+ * @route GET /movies
+ * @returns {object[]} List of movies
+ */
+app.get("/movies", async (req, res) => {
+	await Movies.find()
+		.then((movies) => {
+			res.status(201).json(movies);
+		})
+		.catch((err) => {
+			console.error(err);
+			res.status(500).send("Error: " + err);
+		});
 });
 
-//Return data about a single movie by title to the user
-app.get("/movies/:title", (req, res) => {
-	const { title } = req.params;
-	const movie = movies.find((movie) => movie.Title === title);
+/**
+ * Return data about a single movie by title to the user.
+ *
+ * @route Get /movies/:title
+ * @param {string} req.params.title - The title of the movie to retrieve
+ * @returns {object} Information about the movie
+ */
+app.get("/movies/:title", async (req, res) => {
+	await Movies.findOne({ Title: req.params.title })
+		.then((movie) => {
+			res.json(movie);
+		})
+		.catch((err) => {
+			console.error(err);
+			res.status(500).send("Error: " + err);
+		});
+});
 
-	if (movie) {
-		res.status(200).json(movie);
-	} else {
-		res.status(400).send("no such movie");
+/**
+ * Return data about a genre by name/title.
+ *
+ * @route GET /genres/:name
+ * @param {string} req.params.name - The name of the genre to retrieve.
+ * @returns {object} Information about the genre.
+ */
+app.get("/movies/genres/:name", async (req, res) => {
+	const genreName = req.params.name;
+	try {
+		const movie = await Movies.findOne({ "Genre.Name": genreName });
+
+		if (movie) {
+			res.json(movie.Genre);
+		} else {
+			res.status(404).send("Genre not found");
+		}
+	} catch (err) {
+		console.error(err);
+		res.status(500).send("Error: " + err);
 	}
 });
 
-//Return data about a genre by name/title
-app.get("/genre/:genreName", (req, res) => {
-	const { genreName } = req.params;
-	const genre = movies.find((movie) => movie.Genre.Name === genreName).Genre;
+/**
+ * Return data about a director by name.
+ *
+ * @route GET /directors/:name
+ * @param {string} req.params.name - The name of the director to retrieve.
+ * @returns {object} Informatoin about the director.
+ */
+app.get("/movies/directors/:name", async (req, res) => {
+	const directorName = req.params.name;
 
-	if (genre) {
-		res.status(200).json(genre);
-	} else {
-		res.staus(400).send("no such genre");
+	try {
+		const movie = await Movies.findOne({ "Director.Name": directorName });
+
+		if (movie) {
+			res.json(movie.Director);
+		} else {
+			res.status(404).send("Director not found");
+		}
+	} catch (err) {
+		console.error(err);
+		res.status(500).send("Error: " + err);
 	}
 });
 
-//Return data about a director by name
-app.get("/directors/:directorName", (req, res) => {
-	const { directorName } = req.params;
-	const director = movies.find((movie) => movie.Director.Name === directorName).Director;
+/**
+ * Retrieve a list of all users.
+ *
+ * @route GET /users
+ * @return {object[]} List of users
+ */
+app.get("/users", async (req, res) => {
+	await Users.find()
+		.then((users) => {
+			res.status(201).json(users);
+		})
+		.catch((err) => {
+			console.error(err);
+			res.status(500).send("Error: " + err);
+		});
+});
 
-	if (director) {
-		res.status(200).json(director);
-	} else {
-		res.staus(400).send("no such director");
+/**
+ * Retrieves information about a specific user by their email.
+ *
+ * @route GET /users/:email
+ * @param {string} req.params.email - The email of the user to retrieve.
+ * @returns {object} Information about the user.
+ */
+app.get("/users/:email", async (req, res) => {
+	await Users.findOne({ Email: req.params.email })
+		.then((user) => {
+			res.json(user);
+		})
+		.catch((err) => {
+			console.error(err);
+			res.status(500).send("Error: " + err);
+		});
+});
+
+/**
+ * Allow new users to register.
+ *
+ * @route POST /users
+ * @param {object} req.body - The data of the new user to be created.
+ * @param {string} req.body.email - The email of the new user.
+ * @returns {object} The newly created user.
+ */
+app.post("/users", async (req, res) => {
+	try {
+		const newUser = req.body;
+
+		let user = await Users.findOne({ Email: newUser.Email });
+
+		if (user) {
+			return res.status(400).send({ error: `${newUser.Email} already exists` });
+		}
+
+		user = await Users.create({
+			Email: newUser.Email,
+			Username: newUser.Username,
+			Password: newUser.Password,
+			Birthday: newUser.Birthday,
+		});
+
+		return res.status(201).json({
+			Email: user.Email,
+			Username: user.Username,
+			Birthday: user.Birthday,
+		});
+	} catch (error) {
+		console.error(error);
+
+		if (error.Name === "ValidationError") {
+			const message = Object.values(error.errors).map((value) => value.message);
+			return res.status(400).json({
+				error: message,
+			});
+		}
+
+		return res.status(500).json({ error: error.message });
 	}
 });
 
-//Allow users to update their users info
-app.put("/users/:id", (req, res) => {
-	const { id } = req.params;
-	const updateUser = req.body;
+/**
+ * Allow users to update their user info (username, password, email, date of birth).
+ *
+ * @route PUT /users/:email
+ * @param {string} req.params.Email - The email of the user to be updated.
+ * @param {string} req.body.Username - The new username for the user.
+ * @param {string} req.body.Password - The updated password for the user.
+ * @param {date} req.body.Birthday - The updated birthday for the user.
+ * @returns {object} The updated user information.
+ */
+app.put("/users/:email", async (req, res) => {
+	try {
+		const filter = { Email: req.params.email };
+		const options = { new: true };
+		let update = {};
 
-	let user = users.find((user) => user.id == id);
+		// update name if exists
+		if (req.body.Username) {
+			update["Username"] = req.body.Username;
+		}
 
-	if (user) {
-		user.name = updateUser.name;
-		res.status(200).json(user);
-	} else {
-		res.status(400).send("no such user");
+		// update password if exists
+		if (req.body.Password) {
+			update["Password"] = req.body.Password;
+		}
+
+		// update birthday if exists
+		if (req.body.Birthday) {
+			update["Birthday"] = req.body.Birthday;
+		}
+
+		const user = await Users.findOneAndUpdate(filter, update, options);
+
+		if (!user) {
+			return res.status(400).send({ error: `${req.params.email} was not found` });
+		}
+
+		return res.status(200).json({
+			Email: user.Email,
+			Username: user.Username,
+			Birthday: user.Birthday,
+		});
+	} catch (error) {
+		console.error(error);
+
+		return res.status(500).json({ error: error.message });
 	}
 });
 
-//Remove a movie from a user's favorites list
-app.delete("/users/:id/movies/:movieTitle", (req, res) => {
-	const { id, movieTitle } = req.params;
+/**
+ * Allow users to add a movie to their list of favorites.
+ *
+ * @route POST /users/:email/movies/:movieId/favorite
+ * @param {string} req.params.email - The email of the user.
+ * @param {string} req.params.movieId - The id of the movie to be added.
+ * @returns {object} The updated user information.
+ */
+app.post("/users/:email/movies/:movieId/favorite", async (req, res) => {
+	try {
+		const filter = { Email: req.params.email };
+		const options = { new: true };
+		const update = { $push: { FavoriteMovies: req.params.movieId } };
 
-	let user = users.find((user) => user.id == id);
+		const user = await Users.findOneAndUpdate(filter, update, options);
 
-	if (user) {
-		user.favoriteMovies = user.favoriteMovies.filter((title) => title !== movieTitle);
-		res.status(200).send(`${movieTitle} has been removed from user ${id}'s favorites.`);
-	} else {
-		res.status(400).send("no such user");
+		if (!user) {
+			return res.status(400).send({ error: `${req.params.email} was not found` });
+		}
+
+		return res.status(200).json({
+			Email: user.Email,
+			Username: user.Username,
+			Birthday: user.Birthday,
+			FavoriteMovies: user.FavoriteMovies,
+		});
+	} catch (error) {
+		console.error(error);
+
+		return res.status(500).json({ error: error.message });
 	}
 });
 
-//All existing users to deregister
-app.delete("/users/:id", (req, res) => {
-	const { id } = req.params;
+/**
+ * Allow users to remove a movie to their list of favorites.
+ *
+ * @route DELETE /users/:email/movies/:movieId/favorite
+ * @param {string} req.params.email - The email of the user.
+ * @param {string} req.params.movieId - The id of the movie to be removed.
+ * @returns {object} The updated user information.
+ */
+app.delete("/users/:email/movies/:movieId/favorite", async (req, res) => {
+	try {
+		const filter = { Email: req.params.email };
+		const options = { new: true };
+		const update = { $pull: { FavoriteMovies: req.params.movieId } };
 
-	let user = users.find((user) => user.id == id);
+		const user = await Users.findOneAndUpdate(filter, update, options);
 
-	if (user) {
-		users = users.filter((user) => user.id != id);
-		res.status(200).send(`User ${id} has been deleted`);
+		if (!user) {
+			return res.status(400).send({ error: `${req.params.email} was not found` });
+		}
+
+		return res.status(200).json({
+			Email: user.Email,
+			Username: user.Username,
+			Birthday: user.Birthday,
+			FavoriteMovies: user.FavoriteMovies,
+		});
+	} catch (error) {
+		console.error(error);
+
+		return res.status(500).json({ error: error.message });
+	}
+});
+
+/**
+ * Allow existing users to deregister.
+ *
+ * @route DELETE /users/:username
+ * @param {string} req.params.Username - The username of the user to be deleted.
+ * @returns {string} Message indicating the user has been deleted.
+ */
+app.delete("/users/:username", async (req, res) => {
+	try {
+		const { username } = req.params;
+
+		const user = Users.findOneAndDelete({ Username: username });
+
+		if (!user) {
+			res.status(404).send({ error: `${username} was not found` });
+		}
+
+		return res.status(200).send({ message: `User ${username} has been deleted` });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: error.message });
 	}
 });
 

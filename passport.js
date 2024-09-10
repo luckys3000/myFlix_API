@@ -20,7 +20,7 @@ passport.use(
 					if (!user) {
 						console.log("incorrect username");
 						return callback(null, false, {
-							message: "Inccorect username or password.",
+							message: "Incorect username or password.",
 						});
 					}
 					console.log("finished");
@@ -40,7 +40,7 @@ passport.use(
 	new JWTStrategy(
 		{
 			jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
-			secreOfKey: "your_jwt_secret",
+			secretOrKey: "your_jwt_secret",
 		},
 		async (jwtPayload, callback) => {
 			return await Users.findById(jwtPayload._id)

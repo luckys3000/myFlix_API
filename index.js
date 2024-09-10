@@ -15,6 +15,10 @@ const Users = Models.User;
 
 app.use(bodyParser.json());
 
+let auth = require("./auth")(app);
+const passport = require("passport");
+require("./passport");
+
 //Morgan invoked specifying requests logged using "common" format
 app.use(morgan("common"));
 

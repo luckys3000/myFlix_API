@@ -43,7 +43,7 @@ app.get("/", (req, res) => {
  * @route GET /movies
  * @returns {object[]} List of movies
  */
-app.get("/movies", async (req, res) => {
+app.get("/movies", passport.authenticate("jwt", { session: false }), async (req, res) => {
 	await Movies.find()
 		.then((movies) => {
 			res.status(201).json(movies);
@@ -61,7 +61,7 @@ app.get("/movies", async (req, res) => {
  * @param {string} req.params.title - The title of the movie to retrieve
  * @returns {object} Information about the movie
  */
-app.get("/movies/:title", async (req, res) => {
+app.get("/movies/:title", passport.authenticate("jwt", { session: false }), async (req, res) => {
 	await Movies.findOne({ Title: req.params.title })
 		.then((movie) => {
 			res.json(movie);
@@ -79,7 +79,7 @@ app.get("/movies/:title", async (req, res) => {
  * @param {string} req.params.name - The name of the genre to retrieve.
  * @returns {object} Information about the genre.
  */
-app.get("/movies/genres/:name", async (req, res) => {
+app.get("/movies/genres/:name", passport.authenticate("jwt", { session: false }), async (req, res) => {
 	const genreName = req.params.name;
 	try {
 		const movie = await Movies.findOne({ "Genre.Name": genreName });
@@ -102,7 +102,7 @@ app.get("/movies/genres/:name", async (req, res) => {
  * @param {string} req.params.name - The name of the director to retrieve.
  * @returns {object} Informatoin about the director.
  */
-app.get("/movies/directors/:name", async (req, res) => {
+app.get("/movies/directors/:name", passport.authenticate("jwt", { session: false }), async (req, res) => {
 	const directorName = req.params.name;
 
 	try {
@@ -125,7 +125,7 @@ app.get("/movies/directors/:name", async (req, res) => {
  * @route GET /users
  * @return {object[]} List of users
  */
-app.get("/users", async (req, res) => {
+app.get("/users", passport.authenticate("jwt", { session: false }), async (req, res) => {
 	await Users.find()
 		.then((users) => {
 			res.status(201).json(users);
@@ -137,14 +137,14 @@ app.get("/users", async (req, res) => {
 });
 
 /**
- * Retrieves information about a specific user by their email.
+ * Retrieves information about a specific user by their username.
  *
- * @route GET /users/:email
- * @param {string} req.params.email - The email of the user to retrieve.
+ * @route GET /users/:Username
+ * @param {string} req.params.Username - The email of the user to retrieve.
  * @returns {object} Information about the user.
  */
-app.get("/users/:email", async (req, res) => {
-	await Users.findOne({ Email: req.params.email })
+app.get("/users/:Username", passport.authenticate("jwt", { session: false }), async (req, res) => {
+	await Users.findOne({ Username: req.params.Username })
 		.then((user) => {
 			res.json(user);
 		})
@@ -159,17 +159,17 @@ app.get("/users/:email", async (req, res) => {
  *
  * @route POST /users
  * @param {object} req.body - The data of the new user to be created.
- * @param {string} req.body.email - The email of the new user.
+ * @param {string} req.body.Username - The email of the new user.
  * @returns {object} The newly created user.
  */
 app.post("/users", async (req, res) => {
 	try {
 		const newUser = req.body;
 
-		let user = await Users.findOne({ Email: newUser.Email });
+		let user = await Users.findOne({ Username: newUser.Username });
 
 		if (user) {
-			return res.status(400).send({ error: `${newUser.Email} already exists` });
+			return res.status(400).send({ error: `${newUser.Username} already exists` });
 		}
 
 		user = await Users.create({
@@ -201,22 +201,27 @@ app.post("/users", async (req, res) => {
 /**
  * Allow users to update their user info (username, password, email, date of birth).
  *
- * @route PUT /users/:email
- * @param {string} req.params.Email - The email of the user to be updated.
- * @param {string} req.body.Username - The new username for the user.
+ * @route PUT /users/:username
+ * @param {string} req.params.Username - The Username of the user to be updated.
+ * @param {string} req.body.Email - The new email for the user.
  * @param {string} req.body.Password - The updated password for the user.
  * @param {date} req.body.Birthday - The updated birthday for the user.
  * @returns {object} The updated user information.
  */
-app.put("/users/:email", async (req, res) => {
+app.put("/users/:Username", passport.authenticate("jwt", { session: false }), async (req, res) => {
+	//Condition to check for Username
+	if (req.user.Username !== req.params.Username) {
+		return res.status(400).send("Permission denied");
+	}
+	// Condition ends
 	try {
-		const filter = { Email: req.params.email };
+		const filter = { Username: req.params.Username };
 		const options = { new: true };
 		let update = {};
 
-		// update name if exists
-		if (req.body.Username) {
-			update["Username"] = req.body.Username;
+		// update email if exists
+		if (req.body.Email) {
+			update["Email"] = req.body.Email;
 		}
 
 		// update password if exists
@@ -232,7 +237,7 @@ app.put("/users/:email", async (req, res) => {
 		const user = await Users.findOneAndUpdate(filter, update, options);
 
 		if (!user) {
-			return res.status(400).send({ error: `${req.params.email} was not found` });
+			return res.status(400).send({ error: `${req.params.Username} was not found` });
 		}
 
 		return res.status(200).json({
@@ -250,21 +255,26 @@ app.put("/users/:email", async (req, res) => {
 /**
  * Allow users to add a movie to their list of favorites.
  *
- * @route POST /users/:email/movies/:movieId/favorite
- * @param {string} req.params.email - The email of the user.
+ * @route POST /users/:username/movies/:movieId/favorite
+ * @param {string} req.params.Username - The username of the user.
  * @param {string} req.params.movieId - The id of the movie to be added.
  * @returns {object} The updated user information.
  */
-app.post("/users/:email/movies/:movieId/favorite", async (req, res) => {
+app.post("/users/:username/movies/:movieId/favorite", passport.authenticate("jwt", { session: false }), async (req, res) => {
+	// CONDITION TO CHECK ADDED HERE
+	if (req.user.Username !== req.params.Username) {
+		return res.status(400).send("Permission denied");
+	}
+	// CONDITION ENDS
 	try {
-		const filter = { Email: req.params.email };
+		const filter = { Username: req.params.username };
 		const options = { new: true };
 		const update = { $push: { FavoriteMovies: req.params.movieId } };
 
 		const user = await Users.findOneAndUpdate(filter, update, options);
 
 		if (!user) {
-			return res.status(400).send({ error: `${req.params.email} was not found` });
+			return res.status(400).send({ error: `${req.params.username} was not found` });
 		}
 
 		return res.status(200).json({
@@ -283,21 +293,27 @@ app.post("/users/:email/movies/:movieId/favorite", async (req, res) => {
 /**
  * Allow users to remove a movie to their list of favorites.
  *
- * @route DELETE /users/:email/movies/:movieId/favorite
- * @param {string} req.params.email - The email of the user.
+ * @route DELETE /users/:username/movies/:movieId/favorite
+ * @param {string} req.params.username - The email of the user.
  * @param {string} req.params.movieId - The id of the movie to be removed.
  * @returns {object} The updated user information.
  */
-app.delete("/users/:email/movies/:movieId/favorite", async (req, res) => {
+app.delete("/users/:username/movies/:movieId/favorite", passport.authenticate("jwt", { session: false }), async (req, res) => {
+	// CONDITION TO CHECK ADDED HERE
+	if (req.user.Username !== req.params.Username) {
+		return res.status(400).send("Permission denied");
+	}
+	// CONDITION ENDS
+
 	try {
-		const filter = { Email: req.params.email };
+		const filter = { Username: req.params.username };
 		const options = { new: true };
 		const update = { $pull: { FavoriteMovies: req.params.movieId } };
 
 		const user = await Users.findOneAndUpdate(filter, update, options);
 
 		if (!user) {
-			return res.status(400).send({ error: `${req.params.email} was not found` });
+			return res.status(400).send({ error: `${req.params.username} was not found` });
 		}
 
 		return res.status(200).json({
@@ -320,7 +336,13 @@ app.delete("/users/:email/movies/:movieId/favorite", async (req, res) => {
  * @param {string} req.params.Username - The username of the user to be deleted.
  * @returns {string} Message indicating the user has been deleted.
  */
-app.delete("/users/:username", async (req, res) => {
+app.delete("/users/:username", passport.authenticate("jwt", { session: false }), async (req, res) => {
+	// CONDITION TO CHECK ADDED HERE
+	if (req.user.Username !== req.params.Username) {
+		return res.status(400).send("Permission denied");
+	}
+	// CONDITION ENDS
+
 	try {
 		const { username } = req.params;
 

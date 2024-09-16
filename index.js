@@ -166,6 +166,8 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
  * @returns {object} The newly created user.
  */
 app.post('/users', async (req, res) => {
+	let hashedPassword = Users.hashedPassword(req.body.Password);
+
 	try {
 		const newUser = req.body;
 

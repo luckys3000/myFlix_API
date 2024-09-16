@@ -10,6 +10,8 @@ app.use(express.urlencoded({ extended: true }));
 const mongoose = require('mongoose');
 const Models = require('./models.js');
 
+const { check, validationResult } = require('express-validator');
+
 const Movies = Models.Movie;
 const Users = Models.User;
 
@@ -165,43 +167,60 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
  * @param {string} req.body.Username - The email of the new user.
  * @returns {object} The newly created user.
  */
-app.post('/users', async (req, res) => {
-	let hashedPassword = Users.hashedPassword(req.body.Password);
+app.post(
+	'/users',
+	// Validation logic here for request
+	[
+		check('Username', 'Username is required').isLength({ min: 8 }),
+		check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+		check('Password', 'Password is required').not().isEmpty(),
+		check('Email', 'Email does not appear to be valid').isEmail(),
+	],
+	async (req, res) => {
+		try {
+			// check the validation object for errors
+			let errors = validationResult(req);
 
-	try {
-		const newUser = req.body;
+			if (!errors.isEmpty()) {
+				return res.status(422).json({ errors: errors.array() });
+			}
 
-		let user = await Users.findOne({ Username: newUser.Username });
+			const newUser = req.body;
 
-		if (user) {
-			return res.status(400).send({ error: `${newUser.Username} already exists` });
-		}
+			let hashedPassword = Users.hashedPassword(req.body.Password);
 
-		user = await Users.create({
-			Email: newUser.Email,
-			Username: newUser.Username,
-			Password: newUser.Password,
-			Birthday: newUser.Birthday,
-		});
+			let user = await Users.findOne({ Username: newUser.Username });
 
-		return res.status(201).json({
-			Email: user.Email,
-			Username: user.Username,
-			Birthday: user.Birthday,
-		});
-	} catch (error) {
-		console.error(error);
+			if (user) {
+				return res.status(400).send({ error: `${newUser.Username} already exists` });
+			}
 
-		if (error.Name === 'ValidationError') {
-			const message = Object.values(error.errors).map((value) => value.message);
-			return res.status(400).json({
-				error: message,
+			user = await Users.create({
+				Email: newUser.Email,
+				Username: newUser.Username,
+				Password: hashedPassword,
+				Birthday: newUser.Birthday,
 			});
-		}
 
-		return res.status(500).json({ error: error.message });
+			return res.status(201).json({
+				Email: user.Email,
+				Username: user.Username,
+				Birthday: user.Birthday,
+			});
+		} catch (error) {
+			console.error(error);
+
+			if (error.Name === 'ValidationError') {
+				const message = Object.values(error.errors).map((value) => value.message);
+				return res.status(400).json({
+					error: message,
+				});
+			}
+
+			return res.status(500).json({ error: error.message });
+		}
 	}
-});
+);
 
 /**
  * Allow users to update their user info (username, password, email, date of birth).
@@ -213,49 +232,54 @@ app.post('/users', async (req, res) => {
  * @param {date} req.body.Birthday - The updated birthday for the user.
  * @returns {object} The updated user information.
  */
-app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	//Condition to check for Username
-	if (req.user.Username !== req.params.Username) {
-		return res.status(400).send('Permission denied');
+app.put(
+	'/users/:Username',
+	[check('Username', 'Username is required').isLength({ min: 8 }), check('Password', 'Password is required').not().isEmpty()],
+	passport.authenticate('jwt', { session: false }),
+	async (req, res) => {
+		//Condition to check for Username
+		if (req.user.Username !== req.params.Username) {
+			return res.status(400).send('Permission denied');
+		}
+		// Condition ends
+		try {
+			const filter = { Username: req.params.Username };
+			const options = { new: true };
+			let update = {};
+
+			// update email if exists
+			if (req.body.Email) {
+				update['Email'] = req.body.Email;
+			}
+
+			// update password if exists
+			if (req.body.Password) {
+				update['Password'] = req.body.Password;
+			}
+
+			// update birthday if exists
+			if (req.body.Birthday) {
+				update['Birthday'] = req.body.Birthday;
+			}
+
+			const user = await Users.findOneAndUpdate(filter, update, options);
+
+			if (!user) {
+				return res.status(400).send({ error: `${req.params.Username} was not found` });
+			}
+
+			return res.status(200).json({
+				Email: user.Email,
+				Username: user.Username,
+				Birthday: user.Birthday,
+			});
+		} catch (error) {
+			console.error(error);
+
+			return res.status(500).json({ error: error.message });
+		}
 	}
-	// Condition ends
-	try {
-		const filter = { Username: req.params.Username };
-		const options = { new: true };
-		let update = {};
-
-		// update email if exists
-		if (req.body.Email) {
-			update['Email'] = req.body.Email;
-		}
-
-		// update password if exists
-		if (req.body.Password) {
-			update['Password'] = req.body.Password;
-		}
-
-		// update birthday if exists
-		if (req.body.Birthday) {
-			update['Birthday'] = req.body.Birthday;
-		}
-
-		const user = await Users.findOneAndUpdate(filter, update, options);
-
-		if (!user) {
-			return res.status(400).send({ error: `${req.params.Username} was not found` });
-		}
-
-		return res.status(200).json({
-			Email: user.Email,
-			Username: user.Username,
-			Birthday: user.Birthday,
-		});
-	} catch (error) {
-		console.error(error);
-
-		return res.status(500).json({ error: error.message });
-	}
-});
+);
 
 /**
  * Allow users to add a movie to their list of favorites.

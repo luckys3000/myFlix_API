@@ -1,31 +1,34 @@
-const express = require("express"),
-	morgan = require("morgan"),
-	bodyParser = require("body-parser"),
-	uuid = require("uuid");
+const express = require('express'),
+	morgan = require('morgan'),
+	bodyParser = require('body-parser'),
+	uuid = require('uuid');
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const mongoose = require("mongoose");
-const Models = require("./models.js");
+const mongoose = require('mongoose');
+const Models = require('./models.js');
 
 const Movies = Models.Movie;
 const Users = Models.User;
 
 app.use(bodyParser.json());
 
-let auth = require("./auth")(app);
-const passport = require("passport");
-require("./passport");
+const cors = require('cors');
+app.use(cors());
+
+let auth = require('./auth')(app);
+const passport = require('passport');
+require('./passport');
 
 //Morgan invoked specifying requests logged using "common" format
-app.use(morgan("common"));
+app.use(morgan('common'));
 
 //Express.static to serve documentation file from public folder
-app.use(express.static("public"));
+app.use(express.static('public'));
 
-mongoose.connect("mongodb://localhost:27017/cfDB");
+mongoose.connect('mongodb://localhost:27017/cfDB');
 
 /**
  * Return welcome message on index page.
@@ -33,8 +36,8 @@ mongoose.connect("mongodb://localhost:27017/cfDB");
  * @route GET /
  * @returns {string} Welcome message returned to user
  */
-app.get("/", (req, res) => {
-	res.send("Welcome to myFlix API!");
+app.get('/', (req, res) => {
+	res.send('Welcome to myFlix API!');
 });
 
 /**
@@ -43,14 +46,14 @@ app.get("/", (req, res) => {
  * @route GET /movies
  * @returns {object[]} List of movies
  */
-app.get("/movies", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.get('/movies', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	await Movies.find()
 		.then((movies) => {
 			res.status(201).json(movies);
 		})
 		.catch((err) => {
 			console.error(err);
-			res.status(500).send("Error: " + err);
+			res.status(500).send('Error: ' + err);
 		});
 });
 
@@ -61,14 +64,14 @@ app.get("/movies", passport.authenticate("jwt", { session: false }), async (req,
  * @param {string} req.params.title - The title of the movie to retrieve
  * @returns {object} Information about the movie
  */
-app.get("/movies/:title", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.get('/movies/:title', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	await Movies.findOne({ Title: req.params.title })
 		.then((movie) => {
 			res.json(movie);
 		})
 		.catch((err) => {
 			console.error(err);
-			res.status(500).send("Error: " + err);
+			res.status(500).send('Error: ' + err);
 		});
 });
 
@@ -79,19 +82,19 @@ app.get("/movies/:title", passport.authenticate("jwt", { session: false }), asyn
  * @param {string} req.params.name - The name of the genre to retrieve.
  * @returns {object} Information about the genre.
  */
-app.get("/movies/genres/:name", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.get('/movies/genres/:name', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	const genreName = req.params.name;
 	try {
-		const movie = await Movies.findOne({ "Genre.Name": genreName });
+		const movie = await Movies.findOne({ 'Genre.Name': genreName });
 
 		if (movie) {
 			res.json(movie.Genre);
 		} else {
-			res.status(404).send("Genre not found");
+			res.status(404).send('Genre not found');
 		}
 	} catch (err) {
 		console.error(err);
-		res.status(500).send("Error: " + err);
+		res.status(500).send('Error: ' + err);
 	}
 });
 
@@ -102,20 +105,20 @@ app.get("/movies/genres/:name", passport.authenticate("jwt", { session: false })
  * @param {string} req.params.name - The name of the director to retrieve.
  * @returns {object} Informatoin about the director.
  */
-app.get("/movies/directors/:name", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.get('/movies/directors/:name', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	const directorName = req.params.name;
 
 	try {
-		const movie = await Movies.findOne({ "Director.Name": directorName });
+		const movie = await Movies.findOne({ 'Director.Name': directorName });
 
 		if (movie) {
 			res.json(movie.Director);
 		} else {
-			res.status(404).send("Director not found");
+			res.status(404).send('Director not found');
 		}
 	} catch (err) {
 		console.error(err);
-		res.status(500).send("Error: " + err);
+		res.status(500).send('Error: ' + err);
 	}
 });
 
@@ -125,14 +128,14 @@ app.get("/movies/directors/:name", passport.authenticate("jwt", { session: false
  * @route GET /users
  * @return {object[]} List of users
  */
-app.get("/users", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.get('/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	await Users.find()
 		.then((users) => {
 			res.status(201).json(users);
 		})
 		.catch((err) => {
 			console.error(err);
-			res.status(500).send("Error: " + err);
+			res.status(500).send('Error: ' + err);
 		});
 });
 
@@ -143,14 +146,14 @@ app.get("/users", passport.authenticate("jwt", { session: false }), async (req, 
  * @param {string} req.params.Username - The email of the user to retrieve.
  * @returns {object} Information about the user.
  */
-app.get("/users/:Username", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.get('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	await Users.findOne({ Username: req.params.Username })
 		.then((user) => {
 			res.json(user);
 		})
 		.catch((err) => {
 			console.error(err);
-			res.status(500).send("Error: " + err);
+			res.status(500).send('Error: ' + err);
 		});
 });
 
@@ -162,7 +165,7 @@ app.get("/users/:Username", passport.authenticate("jwt", { session: false }), as
  * @param {string} req.body.Username - The email of the new user.
  * @returns {object} The newly created user.
  */
-app.post("/users", async (req, res) => {
+app.post('/users', async (req, res) => {
 	try {
 		const newUser = req.body;
 
@@ -187,7 +190,7 @@ app.post("/users", async (req, res) => {
 	} catch (error) {
 		console.error(error);
 
-		if (error.Name === "ValidationError") {
+		if (error.Name === 'ValidationError') {
 			const message = Object.values(error.errors).map((value) => value.message);
 			return res.status(400).json({
 				error: message,
@@ -208,10 +211,10 @@ app.post("/users", async (req, res) => {
  * @param {date} req.body.Birthday - The updated birthday for the user.
  * @returns {object} The updated user information.
  */
-app.put("/users/:Username", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	//Condition to check for Username
 	if (req.user.Username !== req.params.Username) {
-		return res.status(400).send("Permission denied");
+		return res.status(400).send('Permission denied');
 	}
 	// Condition ends
 	try {
@@ -221,17 +224,17 @@ app.put("/users/:Username", passport.authenticate("jwt", { session: false }), as
 
 		// update email if exists
 		if (req.body.Email) {
-			update["Email"] = req.body.Email;
+			update['Email'] = req.body.Email;
 		}
 
 		// update password if exists
 		if (req.body.Password) {
-			update["Password"] = req.body.Password;
+			update['Password'] = req.body.Password;
 		}
 
 		// update birthday if exists
 		if (req.body.Birthday) {
-			update["Birthday"] = req.body.Birthday;
+			update['Birthday'] = req.body.Birthday;
 		}
 
 		const user = await Users.findOneAndUpdate(filter, update, options);
@@ -260,10 +263,10 @@ app.put("/users/:Username", passport.authenticate("jwt", { session: false }), as
  * @param {string} req.params.movieId - The id of the movie to be added.
  * @returns {object} The updated user information.
  */
-app.post("/users/:username/movies/:movieId/favorite", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.post('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	// CONDITION TO CHECK ADDED HERE
 	if (req.user.Username !== req.params.Username) {
-		return res.status(400).send("Permission denied");
+		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
 	try {
@@ -298,10 +301,10 @@ app.post("/users/:username/movies/:movieId/favorite", passport.authenticate("jwt
  * @param {string} req.params.movieId - The id of the movie to be removed.
  * @returns {object} The updated user information.
  */
-app.delete("/users/:username/movies/:movieId/favorite", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.delete('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	// CONDITION TO CHECK ADDED HERE
 	if (req.user.Username !== req.params.Username) {
-		return res.status(400).send("Permission denied");
+		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
 
@@ -336,10 +339,10 @@ app.delete("/users/:username/movies/:movieId/favorite", passport.authenticate("j
  * @param {string} req.params.Username - The username of the user to be deleted.
  * @returns {string} Message indicating the user has been deleted.
  */
-app.delete("/users/:username", passport.authenticate("jwt", { session: false }), async (req, res) => {
+app.delete('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	// CONDITION TO CHECK ADDED HERE
 	if (req.user.Username !== req.params.Username) {
-		return res.status(400).send("Permission denied");
+		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
 
@@ -361,10 +364,10 @@ app.delete("/users/:username", passport.authenticate("jwt", { session: false }),
 
 app.use((err, req, res, next) => {
 	console.error(err.stack);
-	res.status(500).send("Something broke!");
+	res.status(500).send('Something broke!');
 });
 
 //listen for requests
 app.listen(8080, () => {
-	console.log("Your app is listening on port 8080.");
+	console.log('Your app is listening on port 8080.');
 });

@@ -190,7 +190,7 @@ app.post(
 
 			const newUser = req.body;
 
-			let hashedPassword = Users.hashedPassword(req.body.Password);
+			let hashedPassword = Users.hashedPassword(newUser.Password);
 
 			let user = await Users.findOne({ Username: newUser.Username });
 

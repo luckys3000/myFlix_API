@@ -39,9 +39,11 @@ mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnified
  * @route GET /
  * @returns {string} Welcome message returned to user
  */
-app.get('/', (req, res) => {
+/**
+ * app.get('/', (req, res) => {
 	res.send('Welcome to LuckyFlix3000!');
 });
+*/
 
 /**
  * Return a list of all movies to the user.

@@ -30,7 +30,8 @@ app.use(morgan('common'));
 //Express.static to serve documentation file from public folder
 app.use(express.static('public'));
 
-mongoose.connect('mongodb://localhost:27017/cfDB');
+//mongoose.connect('mongodb://localhost:27017/cfDB');
+mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 /**
  * Return welcome message on index page.
@@ -39,7 +40,7 @@ mongoose.connect('mongodb://localhost:27017/cfDB');
  * @returns {string} Welcome message returned to user
  */
 app.get('/', (req, res) => {
-	res.send('Welcome to myFlix API!');
+	res.send('Welcome to LuckyFlix3000!');
 });
 
 /**
@@ -395,6 +396,6 @@ app.use((err, req, res, next) => {
 
 //listen for requests
 const port = process.env.PORT || 8080;
-app.listen(port, '0.0.0.0', () => {
-	console.log('Listening on Port ' + port);
+app.listen(port, () => {
+	console.log(`Server is running on port ${port}`);
 });

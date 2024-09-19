@@ -34,18 +34,6 @@ app.use(express.static('public'));
 mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 /**
- * Return welcome message on index page.
- *
- * @route GET /
- * @returns {string} Welcome message returned to user
- */
-/**
- * app.get('/', (req, res) => {
-	res.send('Welcome to LuckyFlix3000!');
-});
-*/
-
-/**
  * Return a list of all movies to the user.
  *
  * @route GET /movies

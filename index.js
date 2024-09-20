@@ -367,7 +367,7 @@ app.delete('/users/:username', passport.authenticate('jwt', { session: false }),
 	try {
 		const { username } = req.params;
 
-		const user = Users.findOneAndDelete({ Username: username });
+		const user = await Users.findOneAndDelete({ Username: username });
 
 		if (!user) {
 			res.status(404).send({ error: `${username} was not found` });

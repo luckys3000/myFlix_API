@@ -165,7 +165,7 @@ app.post(
 		check('Username', 'Username is required').not().isEmpty(),
 		check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
 		check('Password', 'Password is required').not().isEmpty(),
-		check('Password', 'Password is required').isLength({ min: 8 }),
+		check('Password', 'Password requires a minimum of 8 characters').isLength({ min: 8 }),
 		check('Email', 'Email does not appear to be valid').isEmail(),
 	],
 	async (req, res) => {

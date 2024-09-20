@@ -321,7 +321,7 @@ app.post('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt
  */
 app.delete('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	// CONDITION TO CHECK ADDED HERE
-	if (req.user.Username !== req.params.Username) {
+	if (req.user.Username !== req.params.username) {
 		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
@@ -359,7 +359,7 @@ app.delete('/users/:username/movies/:movieId/favorite', passport.authenticate('j
  */
 app.delete('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	// CONDITION TO CHECK ADDED HERE
-	if (req.user.Username !== req.params.Username) {
+	if (req.user.Username !== req.params.username) {
 		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS

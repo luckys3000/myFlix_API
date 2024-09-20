@@ -31,7 +31,7 @@ app.use(morgan('common'));
 app.use(express.static('public'));
 
 //mongoose.connect('mongodb://localhost:27017/cfDB');
-mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(process.env.CONNECTION_URI || 'mongodb://localhost:27017/cfDB', { useNewUrlParser: true, useUnifiedTopology: true });
 
 /**
  * Return a list of all movies to the user.
@@ -162,9 +162,10 @@ app.post(
 	'/users',
 	// Validation logic here for request
 	[
-		check('Username', 'Username is required').isLength({ min: 8 }),
+		check('Username', 'Username is required').not().isEmpty(),
 		check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
 		check('Password', 'Password is required').not().isEmpty(),
+		check('Password', 'Password is required').isLength({ min: 8 }),
 		check('Email', 'Email does not appear to be valid').isEmail(),
 	],
 	async (req, res) => {
@@ -225,7 +226,7 @@ app.post(
  */
 app.put(
 	'/users/:Username',
-	[check('Username', 'Username is required').isLength({ min: 8 }), check('Password', 'Password is required').not().isEmpty()],
+	[check('Username', 'Username is required').not().isEmpty(), check('Password', 'Password is required').not().isEmpty()],
 	passport.authenticate('jwt', { session: false }),
 	async (req, res) => {
 		//Condition to check for Username
@@ -282,7 +283,7 @@ app.put(
  */
 app.post('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	// CONDITION TO CHECK ADDED HERE
-	if (req.user.Username !== req.params.Username) {
+	if (req.user.Username !== req.params.username) {
 		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS

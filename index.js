@@ -96,7 +96,7 @@ app.get('/movies/genres/:name', passport.authenticate('jwt', { session: false })
  *
  * @route GET /directors/:name
  * @param {string} req.params.name - The name of the director to retrieve.
- * @returns {object} Informatoin about the director.
+ * @returns {object} Information about the director.
  */
 app.get('/movies/directors/:name', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	const directorName = req.params.name;
@@ -135,12 +135,12 @@ app.get('/users', passport.authenticate('jwt', { session: false }), async (req, 
 /**
  * Retrieves information about a specific user by their username.
  *
- * @route GET /users/:Username
- * @param {string} req.params.Username - The email of the user to retrieve.
+ * @route GET /users/:username
+ * @param {string} req.params.username - The username to retrieve.
  * @returns {object} Information about the user.
  */
-app.get('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	await Users.findOne({ Username: req.params.Username })
+app.get('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {
+	await Users.findOne({ Username: req.params.username })
 		.then((user) => {
 			res.json(user);
 		})
@@ -155,7 +155,7 @@ app.get('/users/:Username', passport.authenticate('jwt', { session: false }), as
  *
  * @route POST /users
  * @param {object} req.body - The data of the new user to be created.
- * @param {string} req.body.Username - The email of the new user.
+ * @param {string} req.body.username - The username of the new user.
  * @returns {object} The newly created user.
  */
 app.post(
@@ -218,24 +218,24 @@ app.post(
  * Allow users to update their user info (username, password, email, date of birth).
  *
  * @route PUT /users/:username
- * @param {string} req.params.Username - The Username of the user to be updated.
- * @param {string} req.body.Email - The new email for the user.
- * @param {string} req.body.Password - The updated password for the user.
- * @param {date} req.body.Birthday - The updated birthday for the user.
+ * @param {string} req.params.username - The Username of the user to be updated.
+ * @param {string} req.body.email - The new email for the user.
+ * @param {string} req.body.password - The updated password for the user.
+ * @param {date} req.body.birthday - The updated birthday for the user.
  * @returns {object} The updated user information.
  */
 app.put(
-	'/users/:Username',
+	'/users/:username',
 	[check('Username', 'Username is required').not().isEmpty(), check('Password', 'Password is required').not().isEmpty()],
 	passport.authenticate('jwt', { session: false }),
 	async (req, res) => {
 		//Condition to check for Username
-		if (req.user.Username !== req.params.Username) {
+		if (req.user.Username !== req.params.username) {
 			return res.status(400).send('Permission denied');
 		}
 		// Condition ends
 		try {
-			const filter = { Username: req.params.Username };
+			const filter = { Username: req.params.username };
 			const options = { new: true };
 			let update = {};
 
@@ -246,7 +246,8 @@ app.put(
 
 			// update password if exists
 			if (req.body.Password) {
-				update['Password'] = req.body.Password;
+				const hashedPassword = Users.hashedPassword(req.body.Password);
+				update.Password = hashedPassword;
 			}
 
 			// update birthday if exists
@@ -277,7 +278,7 @@ app.put(
  * Allow users to add a movie to their list of favorites.
  *
  * @route POST /users/:username/movies/:movieId/favorite
- * @param {string} req.params.Username - The username of the user.
+ * @param {string} req.params.username - The username of the user.
  * @param {string} req.params.movieId - The id of the movie to be added.
  * @returns {object} The updated user information.
  */

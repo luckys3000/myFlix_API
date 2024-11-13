@@ -141,6 +141,7 @@ app.get('/users', passport.authenticate('jwt', { session: false }), async (req, 
  */
 app.get('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	await Users.findOne({ Username: req.params.username })
+		.poplulate('FavoriteMovies')
 		.then((user) => {
 			res.json(user);
 		})
@@ -316,7 +317,7 @@ app.post('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt
  * Allow users to remove a movie to their list of favorites.
  *
  * @route DELETE /users/:username/movies/:movieId/favorite
- * @param {string} req.params.username - The email of the user.
+ * @param {string} req.params.username - The username of the user.
  * @param {string} req.params.movieId - The id of the movie to be removed.
  * @returns {object} The updated user information.
  */
@@ -355,7 +356,7 @@ app.delete('/users/:username/movies/:movieId/favorite', passport.authenticate('j
  * Allow existing users to deregister.
  *
  * @route DELETE /users/:username
- * @param {string} req.params.Username - The username of the user to be deleted.
+ * @param {string} req.params.username - The username of the user to be deleted.
  * @returns {string} Message indicating the user has been deleted.
  */
 app.delete('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {

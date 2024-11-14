@@ -163,10 +163,10 @@
           </td>
         </tr>
         <tr>
-          <td>Retrieves information about a specific user by their email</td>
-          <td>/user/:email</td>
+          <td>Retrieves information about a specific user by their username</td>
+          <td>/user/:username</td>
           <td>GET</td>
-          <td>The user email as a string URL parameter</td>
+          <td>The Username as a string URL parameter</td>
           <td>A JSON object holding data about the specific user.  Example:
             <pre><code>
               {
@@ -211,7 +211,7 @@
 				</tr>
 				<tr>
 					<td>Allow users to update their user info (username, password, email, date of birth)</td>
-					<td>/users/:email</td>
+					<td>/users/:username</td>
 					<td>PUT</td>
 					<td>
 						A JSON object holding updated data about an existing user. Example:
@@ -234,7 +234,7 @@
 				</tr>
 				<tr>
 					<td>Allow users to add a movie to their list of favorites</td>
-					<td>/users/:email/movies/:movieId/favorite</td>
+					<td>/users/:username/movies/:movieId/favorite</td>
 					<td>POST</td>
 					<td>The user email and the movie_id as a string URL parameter</td>
           <td>
@@ -254,9 +254,9 @@
 				</tr>
 				<tr>
 					<td>Allow users to remove a movie from their list of favorites.</td>
-					<td>/users/:email/movies/:movieId/favorite</td>
+					<td>/users/:username/movies/:movieId/favorite</td>
 					<td>DELETE</td>
-					<td>The user email and the movie_id as a string URL parameter</td>
+					<td>The Username and the movie_id as a string URL parameter</td>
 					<td>
             A JSON object holding updated data about an existing user. Example:
           	<pre><code>

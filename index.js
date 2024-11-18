@@ -31,7 +31,7 @@ app.use(morgan('common'));
 app.use(express.static('public'));
 
 //mongoose.connect('mongodb://localhost:27017/cfDB');
-mongoose.connect(process.env.CONNECTION_URI || 'mongodb://localhost:27017/cfDB', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(process.env.CONNECTION_URI || 'mongodb://localhost:27017/cfDB');
 
 /**
  * Return a list of all movies to the user.

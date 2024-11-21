@@ -10,6 +10,8 @@ app.use(express.urlencoded({ extended: true }));
 const mongoose = require('mongoose');
 const Models = require('./models.js');
 
+const userPublicAttributes = 'Username Email Birthday FavoriteMovies _id';
+
 const { check, validationResult } = require('express-validator');
 
 const Movies = Models.Movie;
@@ -58,27 +60,32 @@ app.get('/movies', passport.authenticate('jwt', { session: false }), async (req,
  * @returns {object} Information about the movie
  */
 app.get('/movies/:title', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	await Movies.findOne({ Title: req.params.title })
-		.then((movie) => {
-			res.json(movie);
-		})
-		.catch((err) => {
-			console.error(err);
-			res.status(500).send('Error: ' + err);
-		});
+	try {
+		const title = req.params.title; // Take the input parameter as-is
+		const movie = await Movies.findOne({ Title: new RegExp(`^${title}$`, 'i') }); // Case-insensitive search
+		if (!movie) {
+			return res.status(404).send('Movie not found.');
+		}
+
+		// Return the movie as stored in the database
+		res.json(movie);
+	} catch (err) {
+		console.error(err);
+		res.status(500).send('Error: ' + err);
+	}
 });
 
 /**
  * Return data about a genre by name/title.
  *
- * @route GET /genres/:name
+ * @route GET /movies/genres/:name
  * @param {string} req.params.name - The name of the genre to retrieve.
  * @returns {object} Information about the genre.
  */
 app.get('/movies/genres/:name', passport.authenticate('jwt', { session: false }), async (req, res) => {
 	const genreName = req.params.name;
 	try {
-		const movie = await Movies.findOne({ 'Genre.Name': genreName });
+		const movie = await Movies.findOne({ 'Genre.Name': new RegExp(`^${genreName}$`, 'i') });
 
 		if (movie) {
 			res.json(movie.Genre);
@@ -102,7 +109,7 @@ app.get('/movies/directors/:name', passport.authenticate('jwt', { session: false
 	const directorName = req.params.name;
 
 	try {
-		const movie = await Movies.findOne({ 'Director.Name': directorName });
+		const movie = await Movies.findOne({ 'Director.Name': new RegExp(`^${directorName}$`, 'i') });
 
 		if (movie) {
 			res.json(movie.Director);
@@ -122,7 +129,7 @@ app.get('/movies/directors/:name', passport.authenticate('jwt', { session: false
  * @return {object[]} List of users
  */
 app.get('/users', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	await Users.find()
+	await Users.find({}, userPublicAttributes)
 		.then((users) => {
 			res.status(201).json(users);
 		})
@@ -140,15 +147,20 @@ app.get('/users', passport.authenticate('jwt', { session: false }), async (req, 
  * @returns {object} Information about the user.
  */
 app.get('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	await Users.findOne({ Username: req.params.username })
-		.poplulate('FavoriteMovies')
-		.then((user) => {
-			res.json(user);
-		})
-		.catch((err) => {
-			console.error(err);
-			res.status(500).send('Error: ' + err);
-		});
+	const username = req.params.username; // Extract the username from the route parameter
+	try {
+		// Perform a case-insensitive query for Username
+		const user = await Users.findOne({ Username: new RegExp(`^${username}$`, 'i') }, userPublicAttributes);
+
+		if (user) {
+			res.json(user); // Return the user data as stored in the database
+		} else {
+			res.status(404).send('User not found');
+		}
+	} catch (err) {
+		console.error(err);
+		res.status(500).send('Error: ' + err);
+	}
 });
 
 /**
@@ -182,7 +194,7 @@ app.post(
 
 			let hashedPassword = Users.hashPassword(newUser.Password);
 
-			let user = await Users.findOne({ Username: newUser.Username });
+			let user = await Users.findOne({ Username: new RegExp(`^${newUser.Username}$`, 'i') });
 
 			if (user) {
 				return res.status(400).send({ error: `${newUser.Username} already exists` });
@@ -199,6 +211,8 @@ app.post(
 				Email: user.Email,
 				Username: user.Username,
 				Birthday: user.Birthday,
+				_id: user._id,
+				FavoriteMovies: user.FavoriteMovies,
 			});
 		} catch (error) {
 			console.error(error);
@@ -230,38 +244,39 @@ app.put(
 	[check('Username', 'Username is required').not().isEmpty(), check('Password', 'Password is required').not().isEmpty()],
 	passport.authenticate('jwt', { session: false }),
 	async (req, res) => {
-		//Condition to check for Username
-		if (req.user.Username !== req.params.username) {
+		// Check if the logged-in user's username matches the requested username
+		if (req.user.Username.toLowerCase() !== req.params.username.toLowerCase()) {
 			return res.status(400).send('Permission denied');
 		}
-		// Condition ends
+
 		try {
-			const filter = { Username: req.params.username };
-			const options = { new: true };
+			// Case-insensitive query for the username
+			const filter = { Username: new RegExp(`^${req.params.username}$`, 'i') };
+			const options = { new: true }; // Return the updated document
 			let update = {};
 
-			// update email if exists
+			// Update fields if provided in the request body
 			if (req.body.Email) {
 				update['Email'] = req.body.Email;
 			}
 
-			// update password if exists
 			if (req.body.Password) {
-				const hashedPassword = Users.hashedPassword(req.body.Password);
-				update.Password = hashedPassword;
+				const hashedPassword = Users.hashPassword(req.body.Password);
+				update['Password'] = hashedPassword;
 			}
 
-			// update birthday if exists
 			if (req.body.Birthday) {
 				update['Birthday'] = req.body.Birthday;
 			}
 
+			// Perform the update
 			const user = await Users.findOneAndUpdate(filter, update, options);
 
 			if (!user) {
-				return res.status(400).send({ error: `${req.params.Username} was not found` });
+				return res.status(400).send({ error: `${req.params.username} was not found` });
 			}
 
+			// Return the updated user data
 			return res.status(200).json({
 				Email: user.Email,
 				Username: user.Username,
@@ -284,13 +299,14 @@ app.put(
  * @returns {object} The updated user information.
  */
 app.post('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	// CONDITION TO CHECK ADDED HERE
-	if (req.user.Username !== req.params.username) {
+	// Check if the logged-in user's username matches the requested username
+	if (req.user.Username.toLowerCase() !== req.params.username.toLowerCase()) {
 		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
 	try {
-		const filter = { Username: req.params.username };
+		//Case-insensitive query for the username
+		const filter = { Username: new RegExp(`^${req.params.username}$`, 'i') };
 		const options = { new: true };
 		const update = { $push: { FavoriteMovies: req.params.movieId } };
 
@@ -322,14 +338,15 @@ app.post('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt
  * @returns {object} The updated user information.
  */
 app.delete('/users/:username/movies/:movieId/favorite', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	// CONDITION TO CHECK ADDED HERE
-	if (req.user.Username !== req.params.username) {
+	// Check if the logged-in user's username matches the requested username
+	if (req.user.Username.toLowerCase() !== req.params.username.toLowerCase()) {
 		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
 
 	try {
-		const filter = { Username: req.params.username };
+		//Case-insensitive query for the username
+		const filter = { Username: new RegExp(`^${req.params.username}$`, 'i') };
 		const options = { new: true };
 		const update = { $pull: { FavoriteMovies: req.params.movieId } };
 
@@ -360,8 +377,8 @@ app.delete('/users/:username/movies/:movieId/favorite', passport.authenticate('j
  * @returns {string} Message indicating the user has been deleted.
  */
 app.delete('/users/:username', passport.authenticate('jwt', { session: false }), async (req, res) => {
-	// CONDITION TO CHECK ADDED HERE
-	if (req.user.Username !== req.params.username) {
+	// Check if the logged-in user's username matches the requested username
+	if (req.user.Username.toLowerCase() !== req.params.username.toLowerCase()) {
 		return res.status(400).send('Permission denied');
 	}
 	// CONDITION ENDS
@@ -369,10 +386,11 @@ app.delete('/users/:username', passport.authenticate('jwt', { session: false }),
 	try {
 		const { username } = req.params;
 
-		const user = await Users.findOneAndDelete({ Username: username });
+		// Case-insensitive query using collation
+		const user = await Users.findOneAndDelete({ Username: username }, { collation: { locale: 'en', strength: 2 } });
 
 		if (!user) {
-			res.status(404).send({ error: `${username} was not found` });
+			return res.status(404).send({ error: `${username} was not found` });
 		}
 
 		return res.status(200).send({ message: `User ${username} has been deleted` });
